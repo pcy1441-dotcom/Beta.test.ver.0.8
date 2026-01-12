@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MURDER MYSTERY - PINEAPPLE BETA</title>
+<style>
+  :root {
+    --bg-color: #050505;
+    --accent-red: #cc0000;
+    --gold: #D4AF37;
+    --pine-yellow: #f4d03f;
+  }
+
+  body { 
+    font-family: 'Segoe UI', sans-serif; background: var(--bg-color);
+    margin: 0; padding: 0; text-align: center; color: #e0e0e0; 
+    overflow-x: hidden;
+  }
+
+  /* --- CAUTION 띠 애니메이션 --- */
+  .ticker-wrap {
+    width: 100%; overflow: hidden; background: #f4d03f; color: #000;
+    padding: 5px 0; font-weight: 900; font-size: 14px; position: fixed; z-index: 10;
+  }
+  .ticker-top { top: 0; }
+  .ticker-bottom { bottom: 0; }
+  .ticker {
+    display: inline-block; white-space: nowrap; animation: ticker 20s linear infinite;
+  }
+  @keyframes ticker {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+  }
+
+  /* --- 메인 레이아웃 --- */
+  .content-wrapper {
+    min-height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center;
+    padding: 50px 20px; box-sizing: border-box;
+  }
+
+  #menu, #draw-area { 
+    background: rgba(20, 20, 20, 0.95); padding: 40px; border-radius: 20px; 
+    border: 1px solid #333; box-shadow: 0 0 30px rgba(0,0,0,1); width: 100%; max-width: 400px;
+  }
+
+  /* --- 버튼 및 스위치 --- */
+  .main-btn {
+    background: #222; color: #fff; border: 1px solid #444; padding: 15px 40px;
+    border-radius: 12px; font-weight: bold; cursor: pointer; transition: 0.3s;
+  }
+  .main-btn:hover { background: #333; border-color: var(--pine-yellow); }
+  
+  .switch { position: relative; display: inline-block; width: 44px; height: 20px; vertical-align: middle; }
+  .switch input { opacity: 0; width: 0; height: 0; }
+  .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #444; transition: .4s; border-radius: 20px; }
+  .slider:before { position: absolute; content: ""; height: 14px; width: 14px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
+  input:checked + .slider { background-color: var(--accent-red); }
+  input:checked + .slider:before { transform: translateX(24px); }
+
+  /* --- 결과 카드 --- */
+  #result { 
+    display: none; background: #f5f5f5; color: #111; padding: 40px 20px; 
+    border-radius: 25px; width: 100%; max-width: 380px; box-shadow: 0 20px 50px rgba(0,0,0,0.8);
+  }
+  #role { font-size: 48px; font-weight: 900; margin-bottom: 10px; }
+  #skill { font-size: 36px; font-weight: bold; margin: 15px 0; }
+  
+  /* --- 능력별 특수 색상 --- */
+  .skill-gunslinger { background: linear-gradient(45deg, #FF1801, #3712FF); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  .skill-yellow { color: #b8860b; text-shadow: 1px 1px 0px #fff; } 
+  .skill-pink { color: #FB66FF; }
+
+  /* --- 하단 스크롤 섹션 --- */
+  .bottom-info {
+    background: #111; padding: 80px 20px; border-top: 1px dashed #333; width: 100%;
+  }
+  .pine-logo { font-size: 50px; margin-bottom: 20px; }
+  .data-box { 
+    text-align: left; max-width: 500px; margin: 0 auto; color: #888; font-family: monospace;
+    background: #000; padding: 20px; border: 1px solid #222;
+  }
+
+  /* --- 최종 화면 --- */
+  #final-screen { display: none; background: #000; padding: 100px 20px; width: 100%; height: 100vh; box-sizing: border-box; }
+  .type-standard { color: var(--accent-red); }
+  .type-zombie { color: #32CD32; }
+  .type-chillsear { color: #fff; text-shadow: 0 0 15px #87CEEB; }
+</style>
+</head>
+<body>
+
+<div class="ticker-wrap ticker-top">
+  <div class="ticker">
+    CAUTION 🍍 DANGER 🍍 PINEAPPLE INC. 🍍 DO NOT CROSS 🍍 CAUTION 🍍 DANGER 🍍 PINEAPPLE INC. 🍍 DO NOT CROSS 🍍
+  </div>
+</div>
+
+<div class="content-wrapper">
+  <h1 style="color:#222; letter-spacing:10px; margin-bottom:40px;">PINEAPPLE BETA</h1>
+
+  <div id="menu">
+    <div style="margin-bottom:20px;">
+      <span style="font-size: 13px; color: #777;">능력/타입 활성화</span>
+      <label class="switch"><input type="checkbox" id="useSkills" checked><span class="slider"></span></label>
+    </div>
+    <label>인원 수 : <input type="number" id="playerCount" min="4" max="20" value="6" style="background:#222; border:1px solid #444; color:#fff; padding:5px; border-radius:5px; width:50px;"></label><br>
+    <button onclick="startGame()" class="main-btn" style="margin-top:30px; width:100%;">GAME START</button>
+  </div>
+
+  <div id="draw-area" style="display:none;">
+    <div id="playerNum" style="font-size: 28px; margin-bottom: 25px; color: #666;"></div>
+    <button onclick="draw()" class="main-btn" style="background:var(--accent-red); border:none; width:100%;">역할 확인</button>
+  </div>
+
+  <div id="result">
+    <div id="role"></div>
+    <div id="skill"></div>
+    <div id="desc" style="font-size:18px; color:#666; margin-bottom:30px; line-height:1.4;"></div>
+    <button onclick="nextPlayer()" style="background:#000; color:#fff; width:100%; padding:15px; border-radius:12px; border:none; font-weight:bold;">확인 완료</button>
+  </div>
+
+  <div id="final-screen">
+    <div style="color: #666; font-size: 20px; margin-bottom: 25px;">이번 라운드 킬러는...</div>
+    <div id="finalType" style="font-size:70px; font-weight:900; margin-bottom:20px;"></div>
+    <div id="finalDetail" style="font-size: 22px; color: #444; font-weight:bold;"></div>
+    <br><br>
+    <button onclick="location.reload()" style="background:none; border:1px solid #333; color:#333; padding:10px 20px; cursor:pointer;">REBOOT SYSTEM</button>
+  </div>
+</div>
+
+<div class="bottom-info">
+  <div class="pine-logo">🍍</div>
+  <h2 style="color:var(--pine-yellow);">PINEAPPLE DATABASE</h2>
+  <div class="data-box">
+    > ACCESS GRANTED...<br>
+    > SUBJECT: MURDER CASE #2024<br>
+    > STATUS: ENCRYPTED<br><br>
+    [SYSTEM GUIDE]<br>
+    - 시민: 쥐죽은 듯이 숨으십시오. 최대 2명만이 특별한 힘을 가집니다.<br>
+    - 보안관/의사: 당신들의 무능함은 팀의 패배를 부릅니다.<br>
+    - 파인애플 알러지 주의.
+  </div>
+</div>
+
+<div class="ticker-wrap ticker-bottom">
+  <div class="ticker">
+    🍍 SYSTEM ONLINE 🍍 PINEAPPLE HQ 🍍 WATCH YOUR BACK 🍍 SYSTEM ONLINE 🍍 PINEAPPLE HQ 🍍 WATCH YOUR BACK 🍍
+  </div>
+</div>
+
+<script>
+const skillData = {
+  머더: [
+    { name: "방탄", desc: "한 번 공격을 버팁니다. (2목숨)입니다." },
+    { name: "가방", desc: "죽인 대상이 살아있는 것처럼 행동하다가 마지막에 사망합니다. (1명)입니다." },
+    { name: "총잡이", desc: "보안관과 같은 방식으로 처치합니다.", special: "gunslinger" }
+  ],
+  보안관: [
+    { name: "강인한", desc: "목숨이 2개가 됩니다.입니다." },
+    { name: "마피아", desc: "머더와 모든 시민을 제거하면 즉시 승리합니다.", special: "yellow" }
+  ],
+  의사: [
+    { name: "자가치유", desc: "자신을 치료할 수 있습니다. (1회)입니다." },
+    { name: "전문 의사", desc: "최대 2명까지 치료할 수 있습니다.입니다." }
+  ],
+  시민: [
+    { name: "스파이", desc: "시민/보안관을 죽일수록 최대 2목숨까지 증가합니다. 머더를 죽이면 자신도 사망하며 시민 승리입니다.", special: "yellow" },
+    { name: "퍼블win", desc: "가장 먼저 머더에게 죽으면 즉시 시민 승리입니다.", special: "pink" },
+    { name: "패링", desc: "한 번 공격을 막아냅니다.입니다." }
+  ]
+};
+
+const murderTypes = [
+  { name: "Standard", weight: 60, desc: "추가 능력이 포함된 기본 라운드입니다.", class: "type-standard" },
+  { name: "Chillsear", weight: 30, desc: "의사가 치료할 수 없는 무자비한 라운드입니다.", class: "type-chillsear" },
+  { name: "Zombie", weight: 10, desc: "죽은 자들이 좀비가 되는 감염 라운드입니다.", class: "type-zombie" }
+];
+
+let totalPlayers, current, roles, roundMurderType, useSkills, assignedSkills;
+
+function startGame() {
+  totalPlayers = parseInt(document.getElementById("playerCount").value);
+  useSkills = document.getElementById("useSkills").checked;
+  
+  roles = ["머더", "보안관", "의사"];
+  for (let i = 4; i <= totalPlayers; i++) roles.push("시민");
+  roles.sort(() => Math.random() - 0.5);
+
+  const pool = {
+    머더: [...skillData.머더].sort(() => Math.random() - 0.5),
+    보안관: [...skillData.보안관].sort(() => Math.random() - 0.5),
+    의사: [...skillData.의사].sort(() => Math.random() - 0.5),
+    시민: [...skillData.시민].sort(() => Math.random() - 0.5)
+  };
+
+  let citizenIndices = [];
+  roles.forEach((r, i) => { if(r === "시민") citizenIndices.push(i); });
+  citizenIndices.sort(() => Math.random() - 0.5);
+  let luckyOnes = citizenIndices.slice(0, 2);
+
+  assignedSkills = roles.map((role, idx) => {
+    if (!useSkills) return { name: "무능력", desc: "능력이 없습니다.입니다." };
+    if (role === "머더") return null; 
+    if (role === "시민") {
+      if (luckyOnes.includes(idx) && pool.시민.length > 0) return pool.시민.pop();
+      return { name: "무능력", desc: "능력이 없습니다.입니다." };
+    }
+    return pool[role].length > 0 ? pool[role].pop() : { name: "무능력", desc: "능력이 없습니다.입니다." };
+  });
+
+  const rand = Math.random() * 100;
+  let cum = 0;
+  for (const t of murderTypes) { cum += t.weight; if (rand < cum) { roundMurderType = t; break; } }
+  
+  const mIdx = roles.indexOf("머더");
+  if (!useSkills) {
+      assignedSkills[mIdx] = { name: "무능력", desc: "능력이 없습니다.입니다." };
+  } else {
+      assignedSkills[mIdx] = (roundMurderType.name === "Standard" && pool.머더.length > 0) ? pool.머더.pop() : { name: "SPECIAL TYPE", desc: "특수 타입입니다. 정체는 마지막에 공개됩니다." };
+  }
+
+  current = 0;
+  document.getElementById("menu").style.display = "none";
+  document.getElementById("draw-area").style.display = "block";
+  document.getElementById("playerNum").textContent = `PLAYER 1`;
+  window.scrollTo(0, 0);
+}
+
+function draw() {
+  const role = roles[current];
+  const chosen = assignedSkills[current];
+  const rDiv = document.getElementById("role");
+  const sDiv = document.getElementById("skill");
+  rDiv.textContent = role;
+  rDiv.style.color = role === "머더" ? "#cc0000" : role === "보안관" ? "#2b57ff" : role === "의사" ? "#28a745" : "#666";
+  sDiv.textContent = chosen.name;
+  sDiv.className = chosen.special === "gunslinger" ? "skill-gunslinger" : chosen.special === "yellow" ? "skill-yellow" : chosen.special === "pink" ? "skill-pink" : "";
+  document.getElementById("desc").textContent = chosen.desc;
+  document.getElementById("draw-area").style.display = "none";
+  document.getElementById("result").style.display = "block";
+}
+
+function nextPlayer() {
+  current++;
+  if (current >= totalPlayers) {
+    if (useSkills) {
+      document.getElementById("result").style.display = "none";
+      document.getElementById("final-screen").style.display = "block";
+      const tElt = document.getElementById("finalType");
+      tElt.textContent = roundMurderType.name;
+      tElt.className = roundMurderType.class;
+      document.getElementById("finalDetail").textContent = roundMurderType.desc;
+      if ("vibrate" in navigator) navigator.vibrate(200);
+    } else { location.reload(); }
+    return;
+  }
+  document.getElementById("result").style.display = "none";
+  document.getElementById("draw-area").style.display = "block";
+  document.getElementById("playerNum").textContent = `PLAYER ${current + 1}`;
+}
+</script>
+</body>
+</html>

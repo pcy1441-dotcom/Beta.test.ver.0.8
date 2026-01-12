@@ -1,1 +1,0 @@
-# Beta.test.ver.0.8
